@@ -1,0 +1,5 @@
+TO DO
+
+create a socket, 
+bind it to a specific port, 
+listen for incoming connections, and handle client connections.
