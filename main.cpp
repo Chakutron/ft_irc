@@ -6,11 +6,11 @@
 /*   By: orauline <orauline@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/16 14:21:46 by orauline          #+#    #+#             */
-/*   Updated: 2024/05/14 18:01:36 by orauline         ###   ########.fr       */
+/*   Updated: 2024/05/14 18:15:13 by orauline         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <iostream>
+#include "irc.hpp"
 
 int main(int argc, char **argv)
 {
