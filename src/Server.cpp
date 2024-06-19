@@ -327,9 +327,22 @@ void	Server::handleQuit(int index)
 	m_client[index].m_auth = false;
 }
 
+std::string	Server::removeBeginningChar(std::string str, char c)
+{
+	int i = 0;
+
+	while (str[i])
+	{
+		if (str[i] != c)
+			break ;
+		i++;
+	}
+	return (&str[i]);
+}
+
 void	Server::handleJoin(int index)
 {
-	joinChannel(index, m_client[index].m_buffer.front());
+	joinChannel(index, removeBeginningChar(m_client[index].m_buffer.front(), '#'));
 }
 
 void	Server::joinChannel(int index, std::string channel)

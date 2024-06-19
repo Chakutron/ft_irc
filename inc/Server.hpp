@@ -68,6 +68,7 @@ class Server
     void sendMsgClient(int client, std::string msg);
 
     void popNonStop(int index, int num);
+    std::string	removeBeginningChar(std::string str, char c);
 
   public:
     Server(int port, std::string pwd);
