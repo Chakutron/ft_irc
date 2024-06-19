@@ -16,6 +16,7 @@
 #include <sstream>
 #include <functional>
 #include "Client.hpp"
+#include "Channel.hpp"
 
 #define RED "\e[31m"
 #define GREEN "\e[32m"
