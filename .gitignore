@@ -1,3 +1,7 @@
+client
+client.cpp
+*.o
+ircserv
+client1.cpp
+client2.cpp
 .history
-
-test

@@ -1,48 +1,48 @@
 # **************************************************************************** #
 #                                                                              #
 #                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
+#    makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: orauline <orauline@student.42.fr>          +#+  +:+       +#+         #
+#    By: mchiboub <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2024/04/14 20:31:43 by orauline          #+#    #+#              #
-#    Updated: 2024/05/07 14:56:53 by orauline         ###   ########.fr        #
+#    Created: 2023/04/07 15:15:55 by mchiboub          #+#    #+#              #
+#    Updated: 2023/11/06 17:16:28 by mchiboub         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
-
-
-# Colors
-RESET = \033[0m
-RED = \033[0;91m
-GREEN = \033[0;92m
-YELLOW = \033[0;93m
-BLUE = \033[0;94m
 
 NAME = ircserv
 
 CC = c++
+CFLAGS = -Wall -Wextra -Werror -g -std=c++98
 
-CPPFLAGS = -Wall -Werror -Wextra -std=c++98
+SRCS = 	src/Server.cpp	\
+		src/main.cpp
 
-SRCS = *.cpp
+OBJS = ${SRCS:.cpp=.o}
 
-all: $(NAME)
+GREEN = \e[0;32m
+YELLOW = \e[0;33m
+NC = \e[0m
 
-$(NAME):
-	@$(CC) $(CPPFLAGS) $(SRCS) -o $(NAME)
-	@echo "$(GREEN)$(NAME) compiled successfully ! 🎉 ! $(RESET)"
+all: ${NAME}
 
-re: fclean all
+.cpp.o:
+		@${CC} ${CFLAGS} -c $< -o ${<:.cpp=.o}
+		@echo -n "${YELLOW}*${NC}"
+
+${NAME}: compiling ${OBJS}
+		@${CC} ${CFLAGS} -o ${NAME} ${OBJS}
+		@echo "]\n✅ ${GREEN}Done!${NC}"
+
+compiling:
+		@echo -n "Generating ${GREEN}${NAME}${NC} executable: ["
 
 clean:
-	@echo "$(RED)Cleaning objects...🧹$(RESET)"
-	@rm -f *.o
-	@echo "$(GREEN)Done! ✅$(RESET)"
+		@echo "❌ Deleting object files.."
+		@rm -f ${OBJS}
 
 fclean: clean
-	@echo  "$(RED)Cleaning all...🧽$(RESET)"
-	@rm $(NAME)
-	@echo "$(BLUE)Cleaning binaries...🧼$(RESET)"
-	@echo "$(GREEN)Done! ✅$(RESET)"
+		@echo "❌ Deleting executable files.."
+		@rm -f ${NAME}
 
-.PHONY: all re clean fclean
+re: fclean all
