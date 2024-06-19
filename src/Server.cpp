@@ -352,12 +352,13 @@ void	Server::joinChannel(int index, std::string channel)
 	sendMsgClient(index, m_client[index].m_nick + "!" + m_client[index].m_user + "@" + m_client[index].m_ip + " JOIN #" + channel);
 	if (channel == "botlane")
 	{
-	std::cout << CYAN << "- Client(" << index << ") joined channel: " << channel << NC << std::endl;
-	// we have to work with the channel's MOTD
-	sendMsgClient(index, ":toxic.irc 332 " + m_client[index].m_nick + " #" + channel + " :Welcome to channel " + channel);
-	// we have to list the users in the channel
-	sendMsgClient(index, ":toxic.irc 353 " + m_client[index].m_nick + "= #" + channel + " :@Teemo @Singed Ashe Soraka");
-	sendMsgClient(index, ":toxic.irc 366 " + m_client[index].m_nick + "= #" + channel + " :End of NAMES list");
+		std::cout << CYAN << "- Client(" << index << ") joined channel: " << channel << NC << std::endl;
+		sendMsgClient(index, ":" + m_client[index].m_nick + "!" + m_client[index].m_user + "@" + m_client[index].m_ip + " JOIN :#" + channel);
+		// we have to work with the channel's MOTD
+		sendMsgClient(index, ":toxic.irc 332 " + m_client[index].m_nick + " #" + channel + " :Welcome to channel " + channel);
+		// we have to list the users in the channel
+		sendMsgClient(index, ":toxic.irc 353 " + m_client[index].m_nick + " = #" + channel + " :@Teemo @Singed Ashe Soraka");
+		sendMsgClient(index, ":toxic.irc 366 " + m_client[index].m_nick + " #" + channel + " :End of NAMES list");
 	}
 }
 
@@ -450,7 +451,7 @@ void Server::handleTopic(int index)
 		return;
 	}
 
-	std::string channel = m_client[index].m_buffer.front();
+	std::string channel = removeBeginningChar(m_client[index].m_buffer.front(), '#');
 	popNonStop(index, 1);
 
 	if (m_client[index].m_buffer.empty()) 
