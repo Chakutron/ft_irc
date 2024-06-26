@@ -15,7 +15,20 @@ NAME = ircserv
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -g -std=c++98
 
-SRCS = 	src/Server.cpp	\
+SRCS = 	src/Server.cpp			\
+		src/runServ.cpp			\
+		src/ServerUtils.cpp		\
+		src/handlePass.cpp		\
+		src/handleUser.cpp		\
+		src/handleNick.cpp		\
+		src/handlePing.cpp		\
+		src/handleJoin.cpp		\
+		src/handleQuit.cpp		\
+		src/handleKick.cpp		\
+		src/handleInvite.cpp	\
+		src/handleTopic.cpp		\
+		src/handleMode.cpp		\
+		src/handlePrivMsg.cpp	\
 		src/main.cpp
 
 OBJS = ${SRCS:.cpp=.o}
