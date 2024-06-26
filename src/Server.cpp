@@ -66,6 +66,9 @@ Server::Server(int port, std::string pwd) : m_port(port), m_pwd(pwd)
 	m_commandsMap["INVITE"] = &Server::handleInvite;
 	m_commandsMap["TOPIC"] = &Server::handleTopic;
 	m_commandsMap["MODE"] = &Server::handleMode;
+
+	m_commandsMap["PRIVMSG"] = &Server::handlePrivMsg;
+
 }
 
 void Server::runServ(int port)
@@ -205,8 +208,8 @@ void Server::execBuffer(int index)
 {
 	if (m_client[index].m_buffer.empty() == true || m_client[index].m_buffer.front() == "")
 	{
-	m_client[index].m_buffer.clear();
-	return ;
+		m_client[index].m_buffer.clear();
+		return ;
 	}
 	std::string tmp;
 	tmp = m_client[index].m_buffer.front();
@@ -214,11 +217,12 @@ void Server::execBuffer(int index)
 
 	if (m_commandsMap.find(tmp) != m_commandsMap.end())
 	{
-	CommandFunction func = m_commandsMap[tmp];
-	(this->*func)(index);
+		CommandFunction func = m_commandsMap[tmp];
+		(this->*func)(index);
 	}
 	else
-	std::cout << RED << "- ERROR: command '" << tmp << "' not found on client (" << index << ")" << NC << std::endl;
+		std::cout << RED << "- ERROR: command '" << tmp << "' not found on client (" << index << ")" << NC << std::endl;
+	
 	m_client[index].m_buffer.clear();
 	//std::cout << YELLOW << "recursive call setBuffer\n" << VIOLET << m_client[index].m_tmpBuffer << NC << std::endl;
 	setBuffer(NULL, index);
@@ -338,6 +342,31 @@ std::string	Server::removeBeginningChar(std::string str, char c)
 		i++;
 	}
 	return (&str[i]);
+}
+
+std::string	Server::Deque2String(std::deque<std::string> buffer)
+{
+	std::string msg;
+    for (std::deque<std::string>::iterator it = buffer.begin(); it != buffer.end(); ++it)
+	{
+        msg += *it + " ";
+	}
+	return (msg);
+}
+
+void	Server::handlePrivMsg(int index)
+{
+	std::string user = m_client[index].m_buffer.front();
+	popNonStop(index, 1);
+	std::string msg = Deque2String(m_client[index].m_buffer);
+	for (int i = 1; i <= MAX_CLIENTS; ++i)
+	{
+		if (m_client[i].m_nick == user)
+		{
+			sendMsgClient(i, ":" + m_client[index].m_nick + "!" + m_client[index].m_user + "@" + m_client[index].m_ip + " PRIVMSG " + user + " " + msg);
+			break ;
+		}
+	}
 }
 
 void	Server::handleJoin(int index)

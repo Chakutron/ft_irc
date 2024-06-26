@@ -62,6 +62,7 @@ class Server
     void handleInvite(int index);
     void handleTopic(int index);
     void handleMode(int index);
+    void handlePrivMsg(int index);
     
     bool checkNick(std::string nick);
     void joinChannel(int index, std::string channel);
@@ -70,6 +71,7 @@ class Server
 
     void popNonStop(int index, int num);
     std::string	removeBeginningChar(std::string str, char c);
+    std::string	Deque2String(std::deque<std::string> buffer);
 
   public:
     Server(int port, std::string pwd);
