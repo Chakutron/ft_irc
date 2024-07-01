@@ -33,7 +33,7 @@ void Logger::log(LogLevel level, const std::string& message)
 		std::string colorCode = getColorCode(level);
 		std::string logMessage = std::string(dt) + " [" + levelToString(level) + "] " + message + "\n";
 		
-		std::cout << colorCode << logMessage << << RESET << std::endl;
+		std::cout << colorCode << logMessage << RESET << std::endl;
 		if (logFile.is_open())
 		{
 			logFile << logMessage;
