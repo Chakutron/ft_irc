@@ -358,7 +358,7 @@ void IRCServer::handleNickCommand(int clientFd, const std::string& nickname)
 		if (!client->username.empty())
 		{
 			client->isRegistered = true;
-			sendNumericReply(clientFd, IRCCodes::RPL_WELCOME, nickname, "Welcome to the IRC Network " + nickname + "!" + client->username + "@" + config.get("hostname"));
+			sendNumericReply(clientFd, IRCCodes::RPL_WELCOME, nickname, "Welcome to the *** TOXIC IRC 1.0 *** Network " + nickname + "!" + client->username + "@" + config.get("hostname"));
 		}
 	}
 	else
@@ -394,7 +394,7 @@ void IRCServer::handleUserCommand(int clientFd, const std::string& userInfo)
 	if (!client->nickname.empty())
 	{
 		client->isRegistered = true;
-		sendNumericReply(clientFd, IRCCodes::RPL_WELCOME, client->nickname, "Welcome to the IRC Network " + client->nickname + "!" + client->username + "@" + config.get("hostname"));
+		sendNumericReply(clientFd, IRCCodes::RPL_WELCOME, client->nickname, "Welcome to the *** TOXIC IRC 1.0 *** Network " + client->nickname + "!" + client->username + "@" + config.get("hostname"));
 	}
 }
 
