@@ -4,6 +4,13 @@
 #include <string>
 #include <fstream>
 
+// Colors for LOG levels
+#define RED     = "\033[31m";
+#define GREEN   = "\033[32m";
+#define YELLOW  = "\033[33m";
+#define BLUE    = "\033[34m";
+#define RESET   = "\033[0m";
+
 class Logger
 {
 public:
@@ -22,7 +29,7 @@ private:
 	static LogLevel currentLevel;
 
 	static std::string levelToString(LogLevel level);
-	static const char* getColorCode(LogLevel level);
+	
 };
 
 #define LOG_DEBUG(message) Logger::log(Logger::DEBUG, message)
