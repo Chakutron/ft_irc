@@ -792,21 +792,33 @@ void IRCServer::handleClientInput(int clientFd)
 		disconnectClient(clientFd);
 	}
 }
+
 void IRCServer::processBuffer(int clientFd)
 {
 	std::string& buffer = inputBuffers[clientFd];
 	size_t pos;
-	while ((pos = buffer.find("\r\n")) != std::string::npos)
+	while ((pos = buffer.find_first_of("\r\n")) != std::string::npos)
 	{
 		std::string command = buffer.substr(0, pos);
-		buffer.erase(0, pos + 2);  // Remove processed command and "\n"
+		// buffer.erase(0, pos + 2);  // Remove processed command and "\n"
+		// Check if the command ends with \r\n
+        if (pos + 1 < buffer.length() && buffer[pos] == '\r' && buffer[pos + 1] == '\n')
+        {
+            buffer.erase(0, pos + 2); // Remove processed command and "\r\n"
+        }
+        else
+        {
+            buffer.erase(0, pos + 1); // Remove processed command and "\r" or "\n"
+        }
+
 		if (!command.empty())
 		{
 			processMessage(clientFd, command);
 		}
 	}
 	//LOG_INFO("Buffer for client " + StringUtils::toString(clientFd) + ": " + buffer);
-	// Optional: handle very long lines to prevent buffer overflow
+
+	// handle very long lines to prevent buffer overflow
 	if (buffer.length() > 512)
 	{  // IRC traditionally limits lines to 512 bytes
 		buffer.erase(0, buffer.length());
