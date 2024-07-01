@@ -805,7 +805,7 @@ void IRCServer::processBuffer(int clientFd)
 			processMessage(clientFd, command);
 		}
 	}
-	LOG_INFO("Buffer for client " + StringUtils::toString(clientFd) + ": " + buffer);
+	//LOG_INFO("Buffer for client " + StringUtils::toString(clientFd) + ": " + buffer);
 	// Optional: handle very long lines to prevent buffer overflow
 	if (buffer.length() > 512)
 	{  // IRC traditionally limits lines to 512 bytes
