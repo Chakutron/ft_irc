@@ -3,6 +3,13 @@
 #include <ctime>
 #include <cstring>
 
+// Colors for LOG levels
+const char* RED     = "\033[31m";
+const char* GREEN   = "\033[32m";
+const char* YELLOW  = "\033[33m";
+const char* BLUE    = "\033[34m";
+const char* RESET   = "\033[0m";
+
 std::ofstream Logger::logFile;
 Logger::LogLevel Logger::currentLevel = Logger::INFO;
 
@@ -23,9 +30,10 @@ void Logger::log(LogLevel level, const std::string& message)
 		char* dt = ctime(&now);
 		dt[strlen(dt) - 1] = '\0'; // Remove newline
 
+		std::string colorCode = getColorCode(level);
 		std::string logMessage = std::string(dt) + " [" + levelToString(level) + "] " + message + "\n";
 		
-		std::cout << logMessage;
+		std::cout << colorCode << logMessage << << RESET << std::endl;
 		if (logFile.is_open())
 		{
 			logFile << logMessage;
@@ -44,4 +52,16 @@ std::string Logger::levelToString(LogLevel level)
 		case ERROR: return "ERROR";
 		default: return "UNKNOWN";
 	}
+}
+
+const char* Logger::getColorCode(LogLevel level)
+{
+    switch (level)
+    {
+        case DEBUG: return BLUE;
+        case INFO: return GREEN;
+        case WARNING: return YELLOW;
+        case ERROR: return RED;
+        default: return "";
+    }
 }

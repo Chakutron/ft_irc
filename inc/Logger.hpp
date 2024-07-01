@@ -22,6 +22,7 @@ private:
 	static LogLevel currentLevel;
 
 	static std::string levelToString(LogLevel level);
+	static const char* getColorCode(LogLevel level);
 };
 
 #define LOG_DEBUG(message) Logger::log(Logger::DEBUG, message)
