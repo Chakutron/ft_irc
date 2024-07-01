@@ -3,6 +3,13 @@
 #include <ctime>
 #include <cstring>
 
+// Colors for LOG levels
+const char* RED     = "\033[31m";
+const char* GREEN   = "\033[32m";
+const char* YELLOW  = "\033[33m";
+const char* BLUE    = "\033[34m";
+const char* RESET   = "\033[0m";
+
 std::ofstream Logger::logFile;
 Logger::LogLevel Logger::currentLevel = Logger::INFO;
 
