@@ -7,14 +7,12 @@
 #include "Channel.hpp"
 #include "Command.hpp"
 #include "NetworkManager.hpp"
-#include "ConfigParser.hpp"
 #include "IRCCodes.hpp"
 
 class IRCServer
 {
 private:
 	NetworkManager networkManager;
-	ConfigParser config;
 	std::string password;
 	std::map<int, Client*> clients;
 	std::map<std::string, Channel*> channels;
@@ -35,7 +33,7 @@ private:
 public:
 	IRCServer(std::string cliPort, std::string cliPassword);
 	~IRCServer();
-	void run();
+	void run(std::string cliPort);
 
 	void processBuffer(int clientFd);
 
@@ -56,6 +54,7 @@ public:
 	void handleModeCommand(int clientFd, const std::string& modeInfo);
 	void handleUnregisteredCommand(int clientFd, const std::string& command, const std::string& params);
 	void handleOperCommand(int clientFd, const std::string& params);
+	void handlePartCommand(int clientFd, const std::string& params);
 };
 
 #endif // IRCSERVER_HPP

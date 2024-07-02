@@ -160,7 +160,8 @@ void NetworkManager::setNonBlocking(int fd)
 		throw IRCException("Failed to get socket flags: " + std::string(strerror(errno)));
 	}
 	
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+	//if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
 	{
 		throw IRCException("Failed to set socket to non-blocking: " + std::string(strerror(errno)));
 	}

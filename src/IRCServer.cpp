@@ -7,19 +7,14 @@
 #include <algorithm>
 #include <typeinfo>
 
-
-
-IRCServer::IRCServer(std::string cliPort, std::string cliPassword) : config("irc_config.ini")
+IRCServer::IRCServer(std::string cliPort, std::string cliPassword)
 {
 	int port = this->getInt(cliPort);
 	password = cliPassword;
-	operUsername = config.get("operator_username");
-	operPassword = config.get("operator_password");
-
-	// Update the port in the configuration file and save it
-    config.set("port", cliPort);
-    config.save();
-
+	
+	this->operUsername = "admin";
+	this->operPassword = "adminpass";
+	
 	try
 	{
 		networkManager.initServer(port);
@@ -29,6 +24,7 @@ IRCServer::IRCServer(std::string cliPort, std::string cliPassword) : config("irc
 		LOG_ERROR("Failed to initialize server: " + std::string(e.what()));
 		throw;
 	}
+
 	commands["CAP"] = new CapCommand();
 	commands["PASS"] = new PassCommand();
 	commands["NICK"] = new NickCommand();
@@ -40,6 +36,7 @@ IRCServer::IRCServer(std::string cliPort, std::string cliPassword) : config("irc
 	commands["TOPIC"] = new TopicCommand();
 	commands["MODE"] = new ModeCommand();
 	commands["OPER"] = new OperCommand();
+	commands["PART"] = new PartCommand();
 }
 
 int IRCServer::getInt(const std::string value) const
@@ -74,9 +71,9 @@ IRCServer::~IRCServer()
 	}
 }
 
-void IRCServer::run()
+void IRCServer::run(std::string cliPort)
 {
-	LOG_INFO("Server started on port " + config.get("port"));
+	LOG_INFO("Server started on port " + cliPort);
 	while (true)
 	{
 		try
@@ -91,7 +88,7 @@ void IRCServer::run()
 					{
 						int newClientFd = networkManager.acceptConnection();
 						clients[newClientFd] = new Client(newClientFd);
-						LOG_INFO("New client connected: " + StringUtils::toString(newClientFd));
+						LOG_INFO("New client connected: " + StringUtils::toString(newClientFd - 4));
 					}
 					else
 					{
@@ -124,8 +121,6 @@ void IRCServer::handleOperCommand(int clientFd, const std::string& params)
 		sendNumericReply(clientFd, IRCCodes::ERR_NEEDMOREPARAMS, client->nickname, "OPER :Not enough parameters");
 		return;
 	}
-	std::string trimmedOpeUser = operUsername.substr(0, operUsername.length() - 1); 
-	std::string trimmedOpePass = operPassword.substr(0, operPassword.length() - 1);
 
 //FOR DEBUG
 	// LOG_INFO("Received username: '" + username + "'");
@@ -138,17 +133,16 @@ void IRCServer::handleOperCommand(int clientFd, const std::string& params)
 	// LOG_INFO("Stored trimmedOpePass: '" + trimmedOpePass + "'");
 	// LOG_INFO("Stored trimmedOpePass length: " + StringUtils::toString(trimmedOpePass.length()));
  
-
-	if (username == trimmedOpeUser && password == trimmedOpePass)
+	if (username == operUsername && password == operPassword)
 	{
 		client->isOperator = true;
 		sendNumericReply(clientFd, IRCCodes::RPL_YOUREOPER, client->nickname, ":You are now an IRC operator");
-		LOG_INFO("Client " + StringUtils::toString(clientFd) + " (" + client->nickname + ") is now an operator");
+		LOG_INFO("Client " + StringUtils::toString(clientFd - 4) + " (" + client->nickname + ") is now an operator");
 	}
 	else
 	{
 		sendNumericReply(clientFd, IRCCodes::ERR_PASSWDMISMATCH, client->nickname, ":Password incorrect");
-		LOG_WARNING("Failed OPER attempt by client " + StringUtils::toString(clientFd) + " (" + client->nickname + ")");
+		LOG_WARNING("Failed OPER attempt by client " + StringUtils::toString(clientFd - 4) + " (" + client->nickname + ")");
 	}
 }
 
@@ -181,7 +175,7 @@ void IRCServer::sendNumericReply(int clientFd, const std::string& code, const st
 {
 	std::ostringstream oss;
 	oss.str("");
-	oss << ":" << config.get("server_name") << " " << code << " " << target << " ";
+	oss << ":ToxicIRC " << code << " " << target << " ";
 	oss << IRCCodes::getCodeMessage(code);
 	if (!params.empty())
 	{
@@ -195,7 +189,7 @@ void IRCServer::sendNumericReply(int clientFd, const std::string& code, const st
 
 void IRCServer::disconnectClient(int clientFd)
 {
-	LOG_INFO("Client disconnected: " + StringUtils::toString(clientFd));
+	LOG_INFO("Client disconnected: " + StringUtils::toString(clientFd - 4));
 	networkManager.closeConnection(clientFd);
 	delete clients[clientFd];
 	clients.erase(clientFd);
@@ -229,7 +223,7 @@ void IRCServer::processMessage(int clientFd, const std::string& message)
 			catch (const IRCException& e)
 			{
 				LOG_ERROR("Error executing command " + command + ": " + e.what());
-				sendNumericReply(clientFd, IRCCodes::ERR_UNKNOWNERROR, "*", "Command execution failed");
+				sendNumericReply(clientFd, IRCCodes::ERR_UNKNOWNERROR, "*", ":Command execution failed");
 			}
 		}
 		else
@@ -294,7 +288,7 @@ void IRCServer::handlePassCommand(int clientFd, const std::string& pass)
 	Client* client = clients[clientFd];
 	if (client->authenticated)
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_ALREADYREGISTERED, "*", "You may not reregister");
+		sendNumericReply(clientFd, IRCCodes::ERR_ALREADYREGISTERED, "*", ":You may not reregister");
 		return;
 	}
 	std::string trimmedPassword = pass;
@@ -323,7 +317,7 @@ void IRCServer::handlePassCommand(int clientFd, const std::string& pass)
 	if (trimmedPassword == password)
 	{
 		client->authenticated = true;
-		LOG_INFO("Client " + StringUtils::toString(clientFd) + " authenticated");
+		LOG_INFO("Client " + StringUtils::toString(clientFd - 4) + " authenticated");
 	}
 	else
 	{
@@ -338,12 +332,12 @@ void IRCServer::handleNickCommand(int clientFd, const std::string& nickname)
 	Client* client = clients[clientFd];
 	if (!client->authenticated)
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_PASSWDMISMATCH, "*", "Nick password incorrect");
+		sendNumericReply(clientFd, IRCCodes::ERR_PASSWDMISMATCH, "*", ":Server password needed before nickname");
 		return;
 	}
 	if (nickname.empty())
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_NONICKNAMEGIVEN, "*", "No nickname given");
+		sendNumericReply(clientFd, IRCCodes::ERR_NONICKNAMEGIVEN, "*", ":No nickname given");
 		return;
 	}
 	if (!isNicknameAvailable(nickname))
@@ -358,7 +352,7 @@ void IRCServer::handleNickCommand(int clientFd, const std::string& nickname)
 		if (!client->username.empty())
 		{
 			client->isRegistered = true;
-			sendNumericReply(clientFd, IRCCodes::RPL_WELCOME, nickname, "Welcome to the *** TOXIC IRC 1.0 *** Network " + nickname + "!" + client->username + "@" + config.get("hostname"));
+			sendNumericReply(clientFd, IRCCodes::RPL_WELCOME, nickname, "*** Welcome to the TOXIC IRC 1.0 Network *** " + nickname + "!" + client->username + "@127.0.0.1");
 		}
 	}
 	else
@@ -372,12 +366,12 @@ void IRCServer::handleUserCommand(int clientFd, const std::string& userInfo)
 	Client* client = clients[clientFd];
 	if (!client->authenticated)
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_PASSWDMISMATCH, "*", "User password incorrect");
+		sendNumericReply(clientFd, IRCCodes::ERR_PASSWDMISMATCH, "*", ":Server password needed before nickname");
 		return;
 	}
 	if (client->isRegistered)
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_ALREADYREGISTERED, "*", "You may not reregister");
+		sendNumericReply(clientFd, IRCCodes::ERR_ALREADYREGISTERED, "*", ":You may not reregister");
 		return;
 	}
 	std::istringstream iss(userInfo);
@@ -394,7 +388,7 @@ void IRCServer::handleUserCommand(int clientFd, const std::string& userInfo)
 	if (!client->nickname.empty())
 	{
 		client->isRegistered = true;
-		sendNumericReply(clientFd, IRCCodes::RPL_WELCOME, client->nickname, "Welcome to the *** TOXIC IRC 1.0 *** Network " + client->nickname + "!" + client->username + "@" + config.get("hostname"));
+		sendNumericReply(clientFd, IRCCodes::RPL_WELCOME, client->nickname, "*** Welcome to the TOXIC IRC 1.0 Network *** " + client->nickname + "!" + client->username + "@127.0.0.1");
 	}
 }
 
@@ -403,7 +397,7 @@ void IRCServer::handleJoinCommand(int clientFd, const std::string& channelInfo)
 	Client* client = clients[clientFd];
 	if (!client->isRegistered)
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", "You have not registered");
+		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", ":You have not registered");
 		return;
 	}
 
@@ -432,6 +426,8 @@ void IRCServer::handleJoinCommand(int clientFd, const std::string& channelInfo)
 	}
 
 	channel->addClient(client);
+	if (channel->clients.size() == 1)
+		channel->addOperator(client);
 	sendToChannel(channel, ":" + client->nickname + " JOIN " + channelName + "\n");
 	
 	if (!channel->topic.empty())
@@ -446,7 +442,10 @@ void IRCServer::handleJoinCommand(int clientFd, const std::string& channelInfo)
 		{
 			userList += " ";
 		}
-		userList += (*it)->nickname;
+		if (channel->isOperator(*it))
+			userList += "@" + (*it)->nickname;
+		else
+			userList += (*it)->nickname;
 	}
 	sendNumericReply(clientFd, IRCCodes::RPL_NAMREPLY, client->nickname, "= " + channelName + " :" + userList);
 	sendNumericReply(clientFd, IRCCodes::RPL_ENDOFNAMES, client->nickname, channelName + " :End of /NAMES list");
@@ -457,7 +456,7 @@ void IRCServer::handlePrivmsgCommand(int clientFd, const std::string& messageInf
 	Client* sender = clients[clientFd];
 	if (!sender->isRegistered)
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", "You have not registered");
+		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", ":You have not registered");
 		return;
 	}
 
@@ -501,7 +500,7 @@ void IRCServer::handleKickCommand(int clientFd, const std::string& kickInfo)
 	Client* kicker = clients[clientFd];
 	if (!kicker->isRegistered)
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", "You have not registered");
+		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", ":You have not registered");
 		return;
 	}
 
@@ -546,7 +545,7 @@ void IRCServer::handleInviteCommand(int clientFd, const std::string& inviteInfo)
 	Client* inviter = clients[clientFd];
 	if (!inviter->isRegistered)
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", "You have not registered");
+		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", ":You have not registered");
 		return;
 	}
 
@@ -589,7 +588,7 @@ void IRCServer::handleTopicCommand(int clientFd, const std::string& topicInfo)
 	Client* client = clients[clientFd];
 	if (!client->isRegistered)
 	{
-		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", "You have not registered");
+		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", ":You have not registered");
 		return;
 	}
 
@@ -638,7 +637,7 @@ void IRCServer::handleModeCommand(int clientFd, const std::string& modeInfo)
 {
 	Client* client = clients[clientFd];
 	if (!client->isRegistered) {
-		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", "You have not registered");
+		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", ":You have not registered");
 		return;
 	}
 
@@ -788,7 +787,7 @@ void IRCServer::handleClientInput(int clientFd)
 	}
 	catch (const IRCException& e)
 	{
-		LOG_WARNING("Error reading from client " + StringUtils::toString(clientFd) + ": " + e.what());
+		LOG_WARNING("Error reading from client " + StringUtils::toString(clientFd - 4) + ": " + e.what());
 		disconnectClient(clientFd);
 	}
 }
@@ -823,5 +822,55 @@ void IRCServer::processBuffer(int clientFd)
 	{  // IRC traditionally limits lines to 512 bytes
 		buffer.erase(0, buffer.length());
 		LOG_WARNING("Buffer overflow from client " + StringUtils::toString(clientFd) + ", clearing buffer");
+	}
+}
+
+void IRCServer::handlePartCommand(int clientFd, const std::string& params)
+{
+	Client* client = clients[clientFd];
+	if (!client->isRegistered)
+	{
+		sendNumericReply(clientFd, IRCCodes::ERR_NOTREGISTERED, "*", ":You have not registered");
+		return;
+	}
+
+	std::istringstream iss(params);
+	std::string channelName;
+	iss >> channelName;
+
+	if (channelName.empty() || channelName[0] != '#')
+	{
+		sendNumericReply(clientFd, IRCCodes::ERR_NEEDMOREPARAMS, client->nickname, "JOIN :Not enough parameters");
+		return;
+	}
+
+	Channel* channel = getOrCreateChannel(channelName);
+
+	channel->removeClient(client);
+
+	std::string userList;
+	for (std::vector<Client*>::const_iterator it = channel->clients.begin(); it != channel->clients.end(); ++it)
+	{
+		if (!userList.empty())
+		{
+			userList += " ";
+		}
+		if (channel->isOperator(*it))
+			userList += "@" + (*it)->nickname;
+		else
+			userList += (*it)->nickname;
+	}
+
+
+
+
+
+	for (std::vector<Client*>::const_iterator it = channel->clients.begin(); it != channel->clients.end(); ++it)
+	{
+		//sendToChannel(channel, client->nickname + " left the channel", clientFd);
+		sendNumericReply((*it)->fd, IRCCodes::RPL_NAMREPLY, client->nickname, "= " + channelName + " :" + userList);
+		sendNumericReply((*it)->fd, IRCCodes::RPL_ENDOFNAMES, client->nickname, channelName + " :End of /NAMES list");
+		//std::cout << "client(" << (*it)->fd << ") " << client->nickname << "!" << client->username << "@hostname PART " << channelName << " :Goodbye " << (*it)->nickname << std::endl;
+		//sendToClient((*it)->fd, client->nickname + "!" + client->username + "@hostname PART " + channelName + " :Goodbye " + (*it)->nickname);
 	}
 }

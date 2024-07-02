@@ -66,3 +66,9 @@ void ModeCommand::execute(IRCServer& server, int client_fd, const std::string& p
 	LOG_DEBUG("Executing MODE command");
 	server.handleModeCommand(client_fd, params);
 }
+
+void PartCommand::execute(IRCServer& server, int client_fd, const std::string& params)
+{
+	LOG_DEBUG("Executing PART command");
+	server.handlePartCommand(client_fd, params);
+}
