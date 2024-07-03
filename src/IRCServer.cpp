@@ -149,9 +149,10 @@ void IRCServer::handleOperCommand(int clientFd, const std::string& params)
 
 void IRCServer::sendToClient(int clientFd, const std::string& message)
 {
+	std::string cleanedMessage = removeConsecutiveDuplicates(message, ':');
 	try
 	{
-		networkManager.sendData(clientFd, message);
+		networkManager.sendData(clientFd, cleanedMessage);
 	}
 	catch (const IRCException& e)
 	{
@@ -162,11 +163,12 @@ void IRCServer::sendToClient(int clientFd, const std::string& message)
 
 void IRCServer::sendToChannel(const Channel* channel, const std::string& message, int excludeFd)
 {
+	std::string cleanedMessage = removeConsecutiveDuplicates(message, ':');
 	for (std::vector<Client*>::const_iterator it = channel->clients.begin(); it != channel->clients.end(); ++it)
 	{
 		if ((*it)->fd != excludeFd)
 		{
-			sendToClient((*it)->fd, message);
+			sendToClient((*it)->fd, cleanedMessage);
 		}
 	}
 }
@@ -174,7 +176,7 @@ void IRCServer::sendToChannel(const Channel* channel, const std::string& message
 void IRCServer::sendNumericReply(int clientFd, const std::string& code, const std::string& target, const std::string& params)
 {
 	std::ostringstream oss;
-	oss.str("");
+	// oss.str("");
 	oss << ":ToxicIRC " << code << " " << target << " ";
 	oss << IRCCodes::getCodeMessage(code);
 	if (!params.empty())
@@ -183,8 +185,11 @@ void IRCServer::sendNumericReply(int clientFd, const std::string& code, const st
 	}
 	oss << "\n";
 	// LOG_INFO("Send numeric reply " + oss.str());
-	sendToClient(clientFd, oss.str());
-	oss.str("");
+	// sendToClient(clientFd, oss.str());
+	// oss.str("");
+
+	std::string cleanedMessage = removeConsecutiveDuplicates(oss.str(), ':');
+	sendToClient(clientFd, cleanedMessage);
 }
 
 void IRCServer::disconnectClient(int clientFd)
