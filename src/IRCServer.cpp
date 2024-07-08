@@ -14,6 +14,7 @@ IRCServer::IRCServer(std::string cliPort, std::string cliPassword)
 	
 	this->operUsername = "admin";
 	this->operPassword = "adminpass";
+	this->hostname = "localhost";
 	
 	try
 	{
@@ -37,6 +38,7 @@ IRCServer::IRCServer(std::string cliPort, std::string cliPassword)
 	commands["MODE"] = new ModeCommand();
 	commands["OPER"] = new OperCommand();
 	commands["PART"] = new PartCommand();
+	commands["QUIT"] = new QuitCommand();
 }
 
 int IRCServer::getInt(const std::string value) const
@@ -806,14 +808,14 @@ void IRCServer::processBuffer(int clientFd)
 		std::string command = buffer.substr(0, pos);
 		// buffer.erase(0, pos + 2);  // Remove processed command and "\n"
 		// Check if the command ends with \r\n
-        if (pos + 1 < buffer.length() && buffer[pos] == '\r' && buffer[pos + 1] == '\n')
-        {
-            buffer.erase(0, pos + 2); // Remove processed command and "\r\n"
-        }
-        else
-        {
-            buffer.erase(0, pos + 1); // Remove processed command and "\r" or "\n"
-        }
+		if (pos + 1 < buffer.length() && buffer[pos] == '\r' && buffer[pos + 1] == '\n')
+		{
+			buffer.erase(0, pos + 2); // Remove processed command and "\r\n"
+		}
+		else
+		{
+			buffer.erase(0, pos + 1); // Remove processed command and "\r" or "\n"
+		}
 
 		if (!command.empty())
 		{
@@ -878,4 +880,28 @@ void IRCServer::handlePartCommand(int clientFd, const std::string& params)
 		//std::cout << "client(" << (*it)->fd << ") " << client->nickname << "!" << client->username << "@hostname PART " << channelName << " :Goodbye " << (*it)->nickname << std::endl;
 		//sendToClient((*it)->fd, client->nickname + "!" + client->username + "@hostname PART " + channelName + " :Goodbye " + (*it)->nickname);
 	}
+}
+
+void IRCServer::handleQuitCommand(int clientFd, const std::string& quitMessage) {
+	Client* client = clients[clientFd];
+	if (!client) {
+		LOG_WARNING("Attempt to quit from non-existent client: " + StringUtils::toString(clientFd));
+		return;
+	}
+	std::string fullQuitMessage = ":" + client->nickname + "!" + client->username + "@" + this->hostname + " QUIT ";
+	if (!quitMessage.empty()) {
+		fullQuitMessage += quitMessage;
+	} else {
+		fullQuitMessage += "Client Quit";
+	}
+	// Inform all channels this client was in about the quit
+	for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
+		Channel* channel = it->second;
+		if (std::find(channel->clients.begin(), channel->clients.end(), client) != channel->clients.end()) {
+			sendToChannel(channel, fullQuitMessage + "\r\n", clientFd);
+			channel->removeClient(client);
+		}
+	}
+	LOG_INFO("Client " + StringUtils::toString(clientFd) + " (" + client->nickname + ") has quit ");
+	disconnectClient(clientFd);
 }

@@ -84,4 +84,10 @@ public:
 	void execute(IRCServer& server, int client_fd, const std::string& params);
 };
 
+class QuitCommand : public Command
+{
+public:
+	void execute(IRCServer& server, int client_fd, const std::string& params);
+};
+
 #endif // COMMAND_HPP

@@ -72,3 +72,9 @@ void PartCommand::execute(IRCServer& server, int client_fd, const std::string& p
 	LOG_DEBUG("Executing PART command");
 	server.handlePartCommand(client_fd, params);
 }
+
+void QuitCommand::execute(IRCServer& server, int client_fd, const std::string& params)
+{
+	LOG_DEBUG("Executing QUIT command");
+	server.handleQuitCommand(client_fd, params);
+}

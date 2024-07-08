@@ -20,6 +20,7 @@ private:
 	std::map<int, std::string> inputBuffers;
 	std::string operUsername;
 	std::string operPassword;
+	std::string hostname;
 
 	void handleClientInput(int clientFd);
 	void processMessage(int clientFd, const std::string& message);
@@ -55,6 +56,8 @@ public:
 	void handleUnregisteredCommand(int clientFd, const std::string& command, const std::string& params);
 	void handleOperCommand(int clientFd, const std::string& params);
 	void handlePartCommand(int clientFd, const std::string& params);
+	void handleQuitCommand(int clientFd, const std::string& quitMessage);
+
 };
 
 #endif // IRCSERVER_HPP
