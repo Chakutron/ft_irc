@@ -90,7 +90,7 @@ void IRCServer::run(std::string cliPort)
 					{
 						int newClientFd = networkManager.acceptConnection();
 						clients[newClientFd] = new Client(newClientFd);
-						LOG_INFO("New client connected: " + StringUtils::toString(newClientFd - 4));
+						LOG_INFO("New client connected: " + StringUtils::toString(newClientFd - 3));
 					}
 					else
 					{
@@ -139,12 +139,12 @@ void IRCServer::handleOperCommand(int clientFd, const std::string& params)
 	{
 		client->isOperator = true;
 		sendNumericReply(clientFd, IRCCodes::RPL_YOUREOPER, client->nickname, ":You are now an IRC operator");
-		LOG_INFO("Client " + StringUtils::toString(clientFd - 4) + " (" + client->nickname + ") is now an operator");
+		LOG_INFO("Client " + StringUtils::toString(clientFd - 3) + " (" + client->nickname + ") is now an operator");
 	}
 	else
 	{
 		sendNumericReply(clientFd, IRCCodes::ERR_PASSWDMISMATCH, client->nickname, ":Password incorrect");
-		LOG_WARNING("Failed OPER attempt by client " + StringUtils::toString(clientFd - 4) + " (" + client->nickname + ")");
+		LOG_WARNING("Failed OPER attempt by client " + StringUtils::toString(clientFd - 3) + " (" + client->nickname + ")");
 	}
 }
 
@@ -158,7 +158,7 @@ void IRCServer::sendToClient(int clientFd, const std::string& message)
 	}
 	catch (const IRCException& e)
 	{
-		LOG_ERROR("Failed to send message to client " + StringUtils::toString(clientFd) + ": " + e.what());
+		LOG_ERROR("Failed to send message to client " + StringUtils::toString(clientFd - 3) + ": " + e.what());
 		disconnectClient(clientFd);
 	}
 }
@@ -196,7 +196,7 @@ void IRCServer::sendNumericReply(int clientFd, const std::string& code, const st
 
 void IRCServer::disconnectClient(int clientFd)
 {
-	LOG_INFO("Client disconnected: " + StringUtils::toString(clientFd - 4));
+	LOG_INFO("Client disconnected: " + StringUtils::toString(clientFd - 3));
 	networkManager.closeConnection(clientFd);
 	delete clients[clientFd];
 	clients.erase(clientFd);
@@ -324,7 +324,7 @@ void IRCServer::handlePassCommand(int clientFd, const std::string& pass)
 	if (trimmedPassword == password)
 	{
 		client->authenticated = true;
-		LOG_INFO("Client " + StringUtils::toString(clientFd - 4) + " authenticated");
+		LOG_INFO("Client " + StringUtils::toString(clientFd - 3) + " authenticated");
 	}
 	else
 	{
@@ -794,7 +794,7 @@ void IRCServer::handleClientInput(int clientFd)
 	}
 	catch (const IRCException& e)
 	{
-		LOG_WARNING("Error reading from client " + StringUtils::toString(clientFd - 4) + ": " + e.what());
+		LOG_WARNING("Error reading from client " + StringUtils::toString(clientFd - 3) + ": " + e.what());
 		disconnectClient(clientFd);
 	}
 }
@@ -822,13 +822,13 @@ void IRCServer::processBuffer(int clientFd)
 			processMessage(clientFd, command);
 		}
 	}
-	//LOG_INFO("Buffer for client " + StringUtils::toString(clientFd) + ": " + buffer);
+	//LOG_INFO("Buffer for client " + StringUtils::toString(clientFd - 3) + ": " + buffer);
 
 	// handle very long lines to prevent buffer overflow
 	if (buffer.length() > 512)
 	{  // IRC traditionally limits lines to 512 bytes
 		buffer.erase(0, buffer.length());
-		LOG_WARNING("Buffer overflow from client " + StringUtils::toString(clientFd) + ", clearing buffer");
+		LOG_WARNING("Buffer overflow from client " + StringUtils::toString(clientFd - 3) + ", clearing buffer");
 	}
 }
 
@@ -885,7 +885,7 @@ void IRCServer::handlePartCommand(int clientFd, const std::string& params)
 void IRCServer::handleQuitCommand(int clientFd, const std::string& quitMessage) {
 	Client* client = clients[clientFd];
 	if (!client) {
-		LOG_WARNING("Attempt to quit from non-existent client: " + StringUtils::toString(clientFd));
+		LOG_WARNING("Attempt to quit from non-existent client: " + StringUtils::toString(clientFd - 3));
 		return;
 	}
 	std::string fullQuitMessage = ":" + client->nickname + "!" + client->username + "@" + this->hostname + " QUIT ";
@@ -902,6 +902,6 @@ void IRCServer::handleQuitCommand(int clientFd, const std::string& quitMessage) 
 			channel->removeClient(client);
 		}
 	}
-	LOG_INFO("Client " + StringUtils::toString(clientFd) + " (" + client->nickname + ") has quit ");
+	LOG_INFO("Client " + StringUtils::toString(clientFd - 3) + " (" + client->nickname + ") has quit ");
 	disconnectClient(clientFd);
 }
