@@ -410,7 +410,10 @@ void IRCServer::handleJoinCommand(int clientFd, const std::string& channelInfo)
 
 	std::istringstream iss(channelInfo);
 	std::string channelName;
+	std::string pwd;
 	iss >> channelName;
+	iss >> pwd;
+
 
 	if (channelName.empty() || channelName[0] != '#')
 	{
@@ -419,12 +422,63 @@ void IRCServer::handleJoinCommand(int clientFd, const std::string& channelInfo)
 	}
 
 	Channel* channel = getOrCreateChannel(channelName);
+
+	if (!channel->key.empty())
+	{
+		if (channel->key != pwd)
+		{
+			sendNumericReply(clientFd, IRCCodes::ERR_PASSWDMISMATCH, "*", ":Invalid channel password");
+			return ;
+		} 
+	}
 	
 	if (channel->invite_only && std::find(channel->clients.begin(), channel->clients.end(), client) == channel->clients.end())
 	{
 		sendNumericReply(clientFd, IRCCodes::ERR_INVITEONLYCHAN, client->nickname, channelName + " :Cannot join channel (+i)");
 		return;
 	}
+
+	if (channel->clients.size() >= static_cast<size_t>(channel->user_limit) && channel->user_limit > 0)
+	{
+		sendNumericReply(clientFd, IRCCodes::ERR_CHANNELISFULL, client->nickname, channelName + " :Cannot join channel (+l)");
+		return;
+	}
+
+	channel->addClient(client);
+	if (channel->clients.size() == 1)
+		channel->addOperator(client);
+	sendToChannel(channel, ":" + client->nickname + " JOIN " + channelName + "\n");
+	
+	if (!channel->topic.empty())
+	{
+		sendNumericReply(clientFd, IRCCodes::RPL_TOPIC, client->nickname, channelName + " :" + channel->topic);
+	}
+	
+	std::string userList;
+	for (std::vector<Client*>::const_iterator it = channel->clients.begin(); it != channel->clients.end(); ++it)
+	{
+		if (!userList.empty())
+		{
+			userList += " ";
+		}
+		if (channel->isOperator(*it))
+			userList += "@" + (*it)->nickname;
+		else
+			userList += (*it)->nickname;
+	}
+	sendNumericReply(clientFd, IRCCodes::RPL_NAMREPLY, client->nickname, "= " + channelName + " :" + userList);
+	sendNumericReply(clientFd, IRCCodes::RPL_ENDOFNAMES, client->nickname, channelName + " :End of /NAMES list");
+}
+
+void IRCServer::handleJoinCommand2(int clientFd, const std::string& channelInfo)
+{
+	Client* client = clients[clientFd];
+
+	std::istringstream iss(channelInfo);
+	std::string channelName;
+	iss >> channelName;
+
+	Channel* channel = getOrCreateChannel(channelName);
 
 	if (channel->clients.size() >= static_cast<size_t>(channel->user_limit) && channel->user_limit > 0)
 	{
@@ -587,6 +641,7 @@ void IRCServer::handleInviteCommand(int clientFd, const std::string& inviteInfo)
 	}
 
 	sendToClient(target->fd, ":" + inviter->nickname + " INVITE " + targetNick + " :" + channelName + "\n");
+	handleJoinCommand2(target->fd, channelName);
 	sendNumericReply(clientFd, IRCCodes::RPL_INVITING, inviter->nickname, targetNick + " " + channelName);
 }
 
@@ -630,7 +685,7 @@ void IRCServer::handleTopicCommand(int clientFd, const std::string& topicInfo)
 	}
 	else
 	{
-		if (!channel->isOperator(client))
+		if (!channel->open_topic && !channel->isOperator(client))
 		{
 			sendNumericReply(clientFd, IRCCodes::ERR_CHANOPRIVSNEEDED, client->nickname, channelName + " :You're not channel operator");
 			return;
@@ -684,6 +739,10 @@ void IRCServer::handleModeCommand(int clientFd, const std::string& modeInfo)
 				break;
 			case 'i':
 				channel->invite_only = adding;
+				modeChanges += (adding ? "+" : "-") + std::string(1, mode);
+				break;
+			case 't':
+				channel->open_topic = adding;
 				modeChanges += (adding ? "+" : "-") + std::string(1, mode);
 				break;
 			case 'k':

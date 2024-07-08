@@ -1,7 +1,7 @@
 #include "../inc/Channel.hpp"
 #include <algorithm>
 
-Channel::Channel(const std::string& name) : name(name), invite_only(false), user_limit(0) {}
+Channel::Channel(const std::string& name) : name(name), invite_only(false), open_topic(false), user_limit(0)  {}
 
 Channel::~Channel() {}
 

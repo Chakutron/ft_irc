@@ -48,6 +48,7 @@ public:
 	void handleNickCommand(int clientFd, const std::string& nickname);
 	void handleUserCommand(int clientFd, const std::string& userInfo);
 	void handleJoinCommand(int clientFd, const std::string& channelInfo);
+	void handleJoinCommand2(int clientFd, const std::string& channelInfo);
 	void handlePrivmsgCommand(int clientFd, const std::string& messageInfo);
 	void handleKickCommand(int clientFd, const std::string& kickInfo);
 	void handleInviteCommand(int clientFd, const std::string& inviteInfo);

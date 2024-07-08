@@ -13,6 +13,7 @@ public:
 	std::vector<Client*> clients;
 	std::vector<Client*> operators;
 	bool invite_only;
+	bool open_topic;
 	std::string key;
 	int user_limit;
 
